@@ -1,0 +1,187 @@
+﻿@model _20200911CRUD.Models.ProductModel
+@{
+    ViewBag.Title = "Product Listing";
+}
+<div class="row mb-10">
+    <div class="col-12">
+        <button class="btn btn-success" type="button" onclick="NewData()">New Product</button>
+    </div>
+</div>
+<table class="table table-bordered table-striped" id="ProductTable">
+    <thead>
+        <tr>
+            <th>Action</th>
+            <th>Product Code</th>
+            <th>Product Name</th>
+            <th>Product Price</th>
+        </tr>
+    </thead>
+    <tbody>
+        @{
+            for (int i = 0; i < Model.lstProduct.Count; i++)
+            {
+                var item = Model.lstProduct[i];
+                var l_ProductInfo = Uri.EscapeUriString(Newtonsoft.Json.JsonConvert.SerializeObject(item));
+                <tr>
+                    <td>
+                        <a href="#" onclick="Edit(this)" data-id="@item.ProductId" data-val="@(l_ProductInfo)">Edit</a> |
+                        <a href="#" onclick="Delete(this)" data-id="@item.ProductId">Delete</a>
+                    </td>
+                    <td>@(item.ProductCode)</td>
+                    <td>@(item.ProductName)</td>
+                    <td>@(item.ProductPrice)</td>
+                </tr>
+            }
+        }
+    </tbody>
+    <tfoot>
+        <tr>
+            <th>Action</th>
+            <th>Product Code</th>
+            <th>Product Name</th>
+            <th>Product Price</th>
+        </tr>
+    </tfoot>
+</table>
+<div class="modal" tabindex="-1" role="dialog" id="modal-dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Product ( <span id="lbl_Title"></span> )</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="col-12">
+                    <div class="form-group">
+                        <label class="control-from">Product Code</label>
+                        @Html.TextBoxFor(model => model.ProductCode, new { @class = "form-control" })
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="form-group">
+                        <label class="control-from">Product Name</label>
+                        @Html.TextBoxFor(model => model.ProductName, new { @class = "form-control" })
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="form-group">
+                        <label class="control-from">Product Price</label>
+                        @Html.TextBoxFor(model => model.ProductPrice, new { @class = "form-control" })
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="btnUpdateProduct" data-id="0" data-action="0">Update</button>
+                @* <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>*@
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    $('#ProductTable').DataTable();
+
+    $('#btnUpdateProduct').click(function () {
+
+        var l_ProductId = $(this).data('id');
+        var l_ProductName = $('#ProductName').val();
+        var l_ProductCode = $('#ProductCode').val();
+        var l_ProductPrice = $('#ProductPrice').val();
+
+        var l_Product = {
+            productId: l_ProductId,
+            ProductName: l_ProductName,
+            ProductCode: l_ProductCode,
+            ProductPrice: l_ProductPrice
+        }
+
+        var action = $('#btnUpdateProduct').data('action');
+        var l_url;
+        if (action == '0') {
+            l_url = "/Product/Insert";
+            l_Product = {
+                ProductName: l_ProductName,
+                ProductCode: l_ProductCode,
+                ProductPrice: l_ProductPrice
+            }
+
+        } else {
+            l_url = "/Product/Edit";
+            l_Product = {
+                productId: l_ProductId,
+                ProductName: l_ProductName,
+                ProductCode: l_ProductCode,
+                ProductPrice: l_ProductPrice
+            }
+        }
+        $.ajax({
+            type: "POST",
+            url: l_url,
+            dataType: "JSON",
+            data: { reqProduct: l_Product },
+            success: function (res) {
+                CheckData(res, '/Product/listing');
+            }
+        });
+    })
+
+    function Edit(x) {
+        $('#lbl_Title').html('Edit');
+        $('#btnUpdateProduct').html('Update');
+        var l_ProductId = $(x).data('id');
+        $('#btnUpdateProduct').data('id', l_ProductId);
+        var ProductInfo = JSON.parse(decodeURI($(x).data('val')));
+        $('#ProductCode').val(ProductInfo.ProductCode);
+        $('#ProductName').val(ProductInfo.ProductName);
+        $('#ProductPrice').val(ProductInfo.ProductPrice);
+        $('#btnUpdateProduct').data('action', '1');
+        $('#modal-dialog').modal({ backdrop: "static", keyboard: false });
+    }
+
+    function Delete(x) {
+
+        Notiflix.Confirm.Show(
+            'Delete Product',
+            'Are you sure want to Delete?',
+            'Yes',
+            'No',
+            function () {
+                var l_ProductId = $(x).data('id');
+                $.ajax({
+                    type: 'POST',
+                    url: '/Product/Delete',
+                    dataType: 'JSON',
+                    data: { id: l_ProductId },
+                    success: function (res) {
+                        CheckData(res, '/Product/Listing');
+                    }
+                });
+            },
+            function () {
+                // No button callback
+                //alert('If you say so...');
+            });
+
+        //var l_ProductId = $(x).data('id');
+        //console.log(l_ProductId);
+        //$.ajax({
+        //    type: 'POST',
+        //    url: '/Product/Delete',
+        //    dataType: 'JSON',
+        //    data: { id: l_ProductId },
+        //    success: function (res) {
+        //        CheckData(res, '/Product/Listing');
+        //    }
+        //});
+    }
+
+    function NewData() {
+        $('#lbl_Title').html('New');
+        $('#btnUpdateProduct').html('Save');
+        $('#modal-dialog').modal({ backdrop: "static", keyboard: false });
+        $('#btnUpdateProduct').data('action', '0');
+
+    }
+
+</script>
